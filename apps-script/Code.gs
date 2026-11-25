@@ -64,7 +64,7 @@ function recordOrder(payload) {
     }
     if (sheet.getLastRow() === 0) {
       sheet.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS])
-        .setFontWeight('bold').setBackground('#5b2a99').setFontColor('#ffffff');
+        .setFontWeight('bold').setBackground('#0b4ea2').setFontColor('#ffffff');
       sheet.setFrozenRows(1);
     }
 
