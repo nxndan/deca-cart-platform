@@ -1,6 +1,6 @@
 # IndyDECA Store Register
 
-A passcode-protected register for the IndyDECA store. Each product has its own button with its price. Every sale is saved to the **Cart Inventory** tab of the DECA Google Sheet.
+A passcode-protected register for the IndyDECA store. Each product has its own button with its price. Every sale is saved to the **Cart Inventory** tab of the **Cart Inventory Tracker** Google Sheet.
 
 - **Passcode:** `3322`
 - Tap a product to add it to the order. Tap it again, or use **+ / −**, to change how many.
@@ -10,7 +10,7 @@ A passcode-protected register for the IndyDECA store. Each product has its own b
 
 ## What gets recorded
 
-Orders are written **only** to the **Cart Inventory** tab. No other tab is touched or created. If the tab can't be found, the order is rejected with an error instead of being saved somewhere else.
+Orders are written **only** to the **Cart Inventory** tab. If that tab doesn't exist yet, it's created on the first sale. No other tab is touched.
 
 The first order adds this header row if the tab is empty. After that, each order adds one row per product:
 
@@ -42,7 +42,7 @@ The DECA spreadsheet is currently an Excel file (`.xlsx`) stored in Drive. Apps 
 
 Test it: place an order and check that rows appear in the **Cart Inventory** tab.
 
-> Using a standalone Apps Script project instead of one attached to the sheet? Set `SPREADSHEET_ID` at the top of `Code.gs` to the ID from the Google Sheet's URL (`.../spreadsheets/d/<ID>/edit`).
+> `SPREADSHEET_ID` at the top of `Code.gs` is already set to the Cart Inventory Tracker sheet. To log to a different Google Sheet, replace it with the ID from that sheet's URL (`.../spreadsheets/d/<ID>/edit`).
 
 ### Optional: host on GitHub Pages instead
 

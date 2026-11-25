@@ -12,15 +12,14 @@
 
 var PASSCODE = '3322';
 
-// The ONLY tab the register writes to. If it can't be found, the order is
-// rejected rather than written somewhere else.
+// The ONLY tab the register writes to. It is created automatically on the
+// first sale if it doesn't exist yet. No other tab is ever written to.
 var INVENTORY_SHEET = 'Cart Inventory';
 
-// Leave blank when this script is attached to the sheet itself
-// (Extensions > Apps Script). Only fill it in if you run a standalone
-// script: paste the ID from the sheet's URL (.../spreadsheets/d/<ID>/edit).
-// The file must be a real Google Sheet, not an .xlsx.
-var SPREADSHEET_ID = '';
+// The "Cart Inventory Tracker" Google Sheet (the ID from its URL:
+// .../spreadsheets/d/<ID>/edit). To use a different sheet, paste its ID here.
+// It must be a real Google Sheet, not an .xlsx file.
+var SPREADSHEET_ID = '1RY50cO_A2IU7aPgKpQrXFTEhLBsFzCKalPRr_kHwwxk';
 
 var HEADERS = ['Timestamp', 'Order ID', 'Product', 'Category', 'Unit Price', 'Qty',
                'Line Total', 'Order Total', 'Final Price Charged'];
@@ -58,10 +57,7 @@ function recordOrder(payload) {
   lock.waitLock(20000);
   try {
     var ss = SPREADSHEET_ID ? SpreadsheetApp.openById(SPREADSHEET_ID) : SpreadsheetApp.getActiveSpreadsheet();
-    var sheet = findSheet_(ss, INVENTORY_SHEET);
-    if (!sheet) {
-      return { ok: false, error: 'Could not find a tab named "' + INVENTORY_SHEET + '" in the spreadsheet' };
-    }
+    var sheet = findSheet_(ss, INVENTORY_SHEET) || ss.insertSheet(INVENTORY_SHEET);
     if (sheet.getLastRow() === 0) {
       sheet.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS])
         .setFontWeight('bold').setBackground('#0b4ea2').setFontColor('#ffffff');
