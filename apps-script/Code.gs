@@ -1,26 +1,35 @@
 /**
- * DECA Store Register -> Google Sheets
+ * IndyDECA Store Register -> Google Sheets
  *
- * Paste this into Extensions > Apps Script of your Google Sheet
+ * Paste this into Extensions > Apps Script of the Google Sheet
  * (see README.md for the full setup steps).
  *
- * It writes two tabs:
- *   "Sales"  - one row per product in every order (easy to count what sold)
- *   "Orders" - one row per order with the calculated and final price
+ * Every order is written ONLY to the "Cart Inventory" tab:
+ * one row per product, with its price, quantity and line total.
+ * The first row of each order also holds the order's calculated
+ * total and the final price charged.
  */
 
 var PASSCODE = '3322';
-var SALES_SHEET = 'Sales';
-var ORDERS_SHEET = 'Orders';
 
-var SALES_HEADERS = ['Timestamp', 'Order ID', 'Item', 'Category', 'Unit Price', 'Qty', 'Line Total'];
-var ORDERS_HEADERS = ['Timestamp', 'Order ID', 'Total Items', 'Items', 'Calculated Total', 'Final Price Charged', 'Adjustment'];
+// The ONLY tab the register writes to. If it can't be found, the order is
+// rejected rather than written somewhere else.
+var INVENTORY_SHEET = 'Cart Inventory';
+
+// Leave blank when this script is attached to the sheet itself
+// (Extensions > Apps Script). Only fill it in if you run a standalone
+// script: paste the ID from the sheet's URL (.../spreadsheets/d/<ID>/edit).
+// The file must be a real Google Sheet, not an .xlsx.
+var SPREADSHEET_ID = '';
+
+var HEADERS = ['Timestamp', 'Order ID', 'Product', 'Category', 'Unit Price', 'Qty',
+               'Line Total', 'Order Total', 'Final Price Charged'];
 
 /** Serves the register page when the Web App URL is opened. */
 function doGet() {
   return HtmlService.createHtmlOutputFromFile('Index')
-    .setTitle('DECA Store Register')
-    .addMetaTag('viewport', 'width=device-width, initial-scale=1, maximum-scale=1')
+    .setTitle('IndyDECA Store Register')
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
@@ -48,32 +57,36 @@ function recordOrder(payload) {
   var lock = LockService.getScriptLock();
   lock.waitLock(20000);
   try {
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
-    var sales = getSheet_(ss, SALES_SHEET, SALES_HEADERS);
-    var orders = getSheet_(ss, ORDERS_SHEET, ORDERS_HEADERS);
+    var ss = SPREADSHEET_ID ? SpreadsheetApp.openById(SPREADSHEET_ID) : SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = findSheet_(ss, INVENTORY_SHEET);
+    if (!sheet) {
+      return { ok: false, error: 'Could not find a tab named "' + INVENTORY_SHEET + '" in the spreadsheet' };
+    }
+    if (sheet.getLastRow() === 0) {
+      sheet.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS])
+        .setFontWeight('bold').setBackground('#5b2a99').setFontColor('#ffffff');
+      sheet.setFrozenRows(1);
+    }
 
     var now = new Date();
     var orderId = String(payload.orderId || Utilities.getUuid().slice(0, 8));
-    var subtotal = toMoney_(payload.subtotal);
+    var orderTotal = toMoney_(payload.subtotal);
     var finalPrice = toMoney_(payload.finalPrice);
 
-    // One row per product
-    var rows = items.map(function (it) {
+    // One row per product. Order Total / Final Price Charged go on the
+    // first row only, so summing those columns doesn't double count.
+    var rows = items.map(function (it, i) {
       var price = toMoney_(it.price);
       var qty = Math.max(1, parseInt(it.qty, 10) || 1);
-      return [now, orderId, String(it.name), String(it.category || ''), price, qty, toMoney_(price * qty)];
+      return [now, orderId, String(it.name), String(it.category || ''), price, qty,
+              toMoney_(price * qty), i === 0 ? orderTotal : '', i === 0 ? finalPrice : ''];
     });
-    var start = sales.getLastRow() + 1;
-    sales.getRange(start, 1, rows.length, SALES_HEADERS.length).setValues(rows);
-    sales.getRange(start, 5, rows.length, 1).setNumberFormat('$0.00');
-    sales.getRange(start, 7, rows.length, 1).setNumberFormat('$0.00');
 
-    // One summary row per order
-    var totalQty = rows.reduce(function (s, r) { return s + r[5]; }, 0);
-    var summary = items.map(function (it) { return it.qty + 'x ' + it.name; }).join(', ');
-    orders.appendRow([now, orderId, totalQty, summary, subtotal, finalPrice, toMoney_(finalPrice - subtotal)]);
-    var r = orders.getLastRow();
-    orders.getRange(r, 5, 1, 3).setNumberFormat('$0.00');
+    var start = sheet.getLastRow() + 1;
+    sheet.getRange(start, 1, rows.length, HEADERS.length).setValues(rows);
+    sheet.getRange(start, 1, rows.length, 1).setNumberFormat('m/d/yyyy h:mm am/pm');
+    sheet.getRange(start, 5, rows.length, 1).setNumberFormat('$0.00');
+    sheet.getRange(start, 7, rows.length, 3).setNumberFormat('$0.00');
 
     return { ok: true, orderId: orderId };
   } finally {
@@ -81,15 +94,14 @@ function recordOrder(payload) {
   }
 }
 
-function getSheet_(ss, name, headers) {
-  var sh = ss.getSheetByName(name);
-  if (!sh) sh = ss.insertSheet(name);
-  if (sh.getLastRow() === 0) {
-    sh.getRange(1, 1, 1, headers.length).setValues([headers])
-      .setFontWeight('bold').setBackground('#0b4ea2').setFontColor('#ffffff');
-    sh.setFrozenRows(1);
+/** Finds a tab by name, ignoring capitalization and extra spaces. */
+function findSheet_(ss, name) {
+  var want = name.replace(/\s+/g, ' ').trim().toLowerCase();
+  var sheets = ss.getSheets();
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].getName().replace(/\s+/g, ' ').trim().toLowerCase() === want) return sheets[i];
   }
-  return sh;
+  return null;
 }
 
 function toMoney_(n) {
