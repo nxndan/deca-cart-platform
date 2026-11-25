@@ -1,42 +1,52 @@
-# DECA Store Register
+# IndyDECA Store Register
 
-A passcode-protected register for the DECA store. Each product has its own button with its price. Every sale is saved to a Google Sheet.
+A passcode-protected register for the IndyDECA store. Each product has its own button with its price. Every sale is saved to the **Cart Inventory** tab of the DECA Google Sheet.
 
 - **Passcode:** `3322`
 - Tap a product to add it to the order. Tap it again, or use **+ / −**, to change how many.
-- The calculator at the bottom shows the running total. You can also type in the cash you received to see the change due.
+- The bottom of the order shows the item count and total, with **Clear** and **Review & Submit** buttons.
 - **Review & Submit** opens a confirmation screen with the calculated total. You can edit the **final price charged** there (for a discount, say) before submitting.
+- Works on phones, tablets (portrait and landscape) and laptops. On phones and portrait tablets, tap **View order** at the bottom to open the order.
 
 ## What gets recorded
 
-Two tabs are created in your Google Sheet automatically:
+Orders are written **only** to the **Cart Inventory** tab. No other tab is touched or created. If the tab can't be found, the order is rejected with an error instead of being saved somewhere else.
 
-| Tab | One row per… | Columns |
-|-----|--------------|---------|
-| **Sales** | product in an order | Timestamp, Order ID, Item, Category, Unit Price, Qty, Line Total |
-| **Orders** | order | Timestamp, Order ID, Total Items, Items, Calculated Total, Final Price Charged, Adjustment |
+The first order adds this header row if the tab is empty. After that, each order adds one row per product:
 
-Each product goes on its own row in **Sales**, so you can count what sold. For example, add a pivot table on Item and sum Qty.
+| Timestamp | Order ID | Product | Category | Unit Price | Qty | Line Total | Order Total | Final Price Charged |
+|-----------|----------|---------|----------|------------|-----|------------|-------------|---------------------|
 
-## Setup (about 5 minutes)
+**Order Total** and **Final Price Charged** are filled in on the first row of each order only. That way, summing those columns gives the real day's total without double counting. To count what sold, add a pivot table on **Product** and sum **Qty**.
 
-1. Create a new Google Sheet, for example "DECA Store Sales".
-2. In the sheet, go to **Extensions → Apps Script**.
-3. Replace everything in `Code.gs` with the contents of [`apps-script/Code.gs`](apps-script/Code.gs).
-4. Click **+ → HTML** and name the file **`Index`** (capital I, no `.html`). Replace its contents with [`index.html`](index.html).
-5. Click **Deploy → New deployment**, pick type **Web app**, and set:
+## Setup
+
+### 1. Convert the spreadsheet to a Google Sheet (required)
+
+The DECA spreadsheet is currently an Excel file (`.xlsx`) stored in Drive. Apps Script **cannot write to `.xlsx` files**, so it must be converted first:
+
+1. Open the spreadsheet in Google Drive.
+2. Click **File → Save as Google Sheets**. This makes a new Google Sheets copy with a new link.
+3. Use that new Google Sheet from now on. Make sure the person deploying the script (step 2) has **edit** access to it.
+
+### 2. Attach the script
+
+1. In the converted Google Sheet, go to **Extensions → Apps Script**.
+2. Replace everything in `Code.gs` with the contents of [`apps-script/Code.gs`](apps-script/Code.gs).
+3. Click **+ → HTML** and name the file **`Index`** (capital I, no `.html`). Replace its contents with [`index.html`](index.html).
+4. Click **Deploy → New deployment**, pick type **Web app**, and set:
    - **Execute as:** Me
    - **Who has access:** Anyone (or "Anyone in your school" if you use a school account)
-6. Click **Deploy** and approve the permissions prompt.
-7. Open the **Web app URL** (it ends in `/exec`). That's the register. Bookmark it, or add it to the home screen of the store iPad or Chromebook.
+5. Click **Deploy** and approve the permissions prompt.
+6. Open the **Web app URL** (it ends in `/exec`). That's the register. Bookmark it, or add it to the home screen of the store iPad or phone.
 
-You can now test it: place an order and check that rows appear in the **Sales** and **Orders** tabs.
+Test it: place an order and check that rows appear in the **Cart Inventory** tab.
+
+> Using a standalone Apps Script project instead of one attached to the sheet? Set `SPREADSHEET_ID` at the top of `Code.gs` to the ID from the Google Sheet's URL (`.../spreadsheets/d/<ID>/edit`).
 
 ### Optional: host on GitHub Pages instead
 
-If you'd rather use a github.io link:
-
-1. Do steps 1–6 above to get the `/exec` URL.
+1. Do the steps above to get the `/exec` URL.
 2. In `index.html`, set `const SCRIPT_URL = "https://script.google.com/macros/s/…/exec";`
 3. Enable GitHub Pages for this repo (Settings → Pages → deploy from branch).
 
