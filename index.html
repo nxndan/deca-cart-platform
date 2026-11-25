@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>DECA Store Register</title>
+<style>
+  :root {
+    --blue: #0b4ea2;
+    --blue-dark: #083a7a;
+    --blue-soft: #e8f0fb;
+    --gold: #f5b700;
+    --bg: #f4f6fa;
+    --card: #ffffff;
+    --text: #1a2233;
+    --muted: #6b7489;
+    --border: #e1e6ef;
+    --red: #d64545;
+    --green: #1f9d55;
+    --radius: 14px;
+    --shadow: 0 1px 3px rgba(16, 24, 40, .08), 0 1px 2px rgba(16, 24, 40, .04);
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+  button { font-family: inherit; cursor: pointer; }
+  .hidden { display: none !important; }
+
+  /* ---------- Lock screen ---------- */
+  #lock {
+    min-height: 100vh;
+    display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(160deg, var(--blue) 0%, var(--blue-dark) 100%);
+    padding: 24px;
+  }
+  .lock-card {
+    background: var(--card); border-radius: 20px; padding: 32px 28px;
+    width: 100%; max-width: 340px; text-align: center;
+    box-shadow: 0 20px 50px rgba(0,0,0,.25);
+  }
+  .logo {
+    display: inline-block; font-weight: 800; letter-spacing: 2px;
+    color: var(--blue); font-size: 28px;
+  }
+  .logo span { color: var(--gold); }
+  .lock-card p { color: var(--muted); margin: 6px 0 22px; }
+  .dots { display: flex; justify-content: center; gap: 14px; margin-bottom: 10px; }
+  .dot { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--blue); transition: background .15s; }
+  .dot.filled { background: var(--blue); }
+  .lock-error { color: var(--red); font-size: 14px; height: 20px; margin-bottom: 8px; }
+  .shake { animation: shake .35s; }
+  @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-8px)} 75%{transform:translateX(8px)} }
+  .keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .key {
+    height: 60px; border-radius: 14px; border: 1px solid var(--border);
+    background: #f8fafd; font-size: 22px; font-weight: 600; color: var(--text);
+  }
+  .key:active { background: var(--blue-soft); }
+  .key.ghost { background: transparent; border-color: transparent; font-size: 16px; color: var(--muted); }
+
+  /* ---------- Header ---------- */
+  header {
+    position: sticky; top: 0; z-index: 20;
+    background: var(--blue); color: #fff;
+    padding: 12px 16px; display: flex; align-items: center; justify-content: space-between;
+    box-shadow: 0 2px 8px rgba(0,0,0,.15);
+  }
+  header .logo { color: #fff; font-size: 20px; }
+  header .sub { font-size: 13px; opacity: .8; margin-left: 8px; font-weight: 500; }
+  .hdr-btn {
+    background: rgba(255,255,255,.15); color: #fff; border: 0;
+    padding: 8px 12px; border-radius: 10px; font-size: 14px; font-weight: 600;
+  }
+
+  /* ---------- Register layout ---------- */
+  .layout { display: flex; gap: 20px; max-width: 1400px; margin: 0 auto; padding: 16px; }
+  .products { flex: 1; min-width: 0; padding-bottom: 120px; }
+  .search {
+    width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--border);
+    font-size: 16px; background: var(--card); margin-bottom: 12px; outline: none;
+  }
+  .search:focus { border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-soft); }
+  .tabs { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 8px; scrollbar-width: none; }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab {
+    white-space: nowrap; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--border);
+    background: var(--card); color: var(--text); font-size: 14px; font-weight: 600;
+  }
+  .tab.active { background: var(--blue); border-color: var(--blue); color: #fff; }
+  .cat-title { font-size: 15px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .6px; margin: 18px 4px 10px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+  .prod {
+    position: relative; text-align: left; background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 14px 12px 12px; min-height: 92px;
+    display: flex; flex-direction: column; justify-content: space-between;
+    box-shadow: var(--shadow); transition: transform .08s, border-color .15s;
+  }
+  .prod:active { transform: scale(.97); }
+  .prod.in-cart { border-color: var(--blue); background: #f7faff; }
+  .prod .name { font-size: 14px; font-weight: 600; line-height: 1.25; color: var(--text); padding-right: 22px; }
+  .prod .price { margin-top: 10px; font-size: 16px; font-weight: 800; color: var(--blue); }
+  .badge {
+    position: absolute; top: 8px; right: 8px; min-width: 24px; height: 24px; padding: 0 6px;
+    border-radius: 12px; background: var(--blue); color: #fff; font-size: 13px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .empty-search { color: var(--muted); text-align: center; padding: 40px 0; }
+
+  /* ---------- Cart ---------- */
+  .cart {
+    width: 360px; flex-shrink: 0; background: var(--card); border-radius: 18px; border: 1px solid var(--border);
+    box-shadow: var(--shadow); position: sticky; top: 76px; align-self: flex-start;
+    max-height: calc(100vh - 92px); display: flex; flex-direction: column;
+  }
+  .cart-head { padding: 16px 18px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+  .cart-head h2 { margin: 0; font-size: 18px; }
+  .link-btn { background: none; border: 0; color: var(--red); font-weight: 600; font-size: 14px; }
+  .cart-items { flex: 1; overflow-y: auto; padding: 4px 0; }
+  .cart-empty { color: var(--muted); text-align: center; padding: 36px 18px; font-size: 14px; }
+  .line { display: flex; align-items: center; gap: 10px; padding: 10px 18px; border-bottom: 1px solid #f1f3f8; }
+  .line-info { flex: 1; min-width: 0; }
+  .line-name { font-size: 14px; font-weight: 600; }
+  .line-unit { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .qty { display: flex; align-items: center; gap: 6px; }
+  .qty button {
+    width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--border);
+    background: #f8fafd; font-size: 18px; font-weight: 700; color: var(--text); line-height: 1;
+  }
+  .qty span { min-width: 20px; text-align: center; font-weight: 700; }
+  .line-total { width: 64px; text-align: right; font-weight: 700; font-size: 14px; }
+
+  /* Calculator */
+  .calc { border-top: 1px solid var(--border); padding: 14px 18px 18px; background: #fafbfd; border-radius: 0 0 18px 18px; }
+  .calc-row { display: flex; justify-content: space-between; font-size: 14px; color: var(--muted); margin-bottom: 6px; }
+  .calc-total { display: flex; justify-content: space-between; align-items: baseline; margin: 8px 0 12px; }
+  .calc-total .lbl { font-size: 16px; font-weight: 700; }
+  .calc-total .amt { font-size: 30px; font-weight: 800; color: var(--blue); }
+  .cash { display: flex; gap: 8px; align-items: center; margin-bottom: 6px; }
+  .cash label { font-size: 13px; color: var(--muted); white-space: nowrap; }
+  .money-input {
+    flex: 1; display: flex; align-items: center; border: 1px solid var(--border); border-radius: 10px; background: #fff; padding: 0 10px;
+  }
+  .money-input span { color: var(--muted); font-weight: 600; }
+  .money-input input { border: 0; outline: none; width: 100%; padding: 9px 4px; font-size: 15px; background: transparent; font-family: inherit; }
+  .quick-cash { display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
+  .quick-cash button { flex: 1; padding: 6px 0; border-radius: 8px; border: 1px solid var(--border); background: #fff; font-size: 13px; font-weight: 600; color: var(--text); }
+  .change { font-size: 14px; display: flex; justify-content: space-between; margin-bottom: 12px; }
+  .change b { color: var(--green); }
+  .change.short b { color: var(--red); }
+  .btn-primary {
+    width: 100%; padding: 15px; border-radius: 12px; border: 0; background: var(--blue); color: #fff;
+    font-size: 17px; font-weight: 700;
+  }
+  .btn-primary:disabled { background: #a9b6cc; cursor: not-allowed; }
+  .btn-primary:not(:disabled):active { background: var(--blue-dark); }
+  .btn-secondary {
+    width: 100%; padding: 14px; border-radius: 12px; border: 1px solid var(--border); background: #fff; color: var(--text);
+    font-size: 16px; font-weight: 600;
+  }
+
+  /* Mobile cart bar */
+  .cart-bar { display: none; }
+  @media (max-width: 860px) {
+    .layout { padding: 12px; }
+    .cart {
+      position: fixed; left: 0; right: 0; bottom: 0; top: auto; width: auto; max-height: 82vh;
+      border-radius: 20px 20px 0 0; z-index: 40; transform: translateY(100%); transition: transform .25s ease;
+    }
+    .cart.open { transform: translateY(0); }
+    .cart-bar {
+      display: flex; position: fixed; left: 12px; right: 12px; bottom: 12px; z-index: 30;
+      background: var(--blue); color: #fff; border: 0; border-radius: 14px; padding: 14px 18px;
+      justify-content: space-between; align-items: center; font-size: 16px; font-weight: 700;
+      box-shadow: 0 8px 24px rgba(11,78,162,.35);
+    }
+    .scrim { position: fixed; inset: 0; background: rgba(10,20,40,.4); z-index: 35; }
+    .grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+  }
+
+  /* ---------- Modal (confirm / success) ---------- */
+  .modal-wrap {
+    position: fixed; inset: 0; background: rgba(10,20,40,.55); z-index: 100;
+    display: flex; align-items: center; justify-content: center; padding: 16px;
+  }
+  .modal {
+    background: var(--card); border-radius: 20px; width: 100%; max-width: 440px; max-height: 92vh;
+    display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 24px 60px rgba(0,0,0,.3);
+  }
+  .modal-head { padding: 20px 22px 12px; }
+  .modal-head h2 { margin: 0 0 4px; font-size: 22px; }
+  .modal-head p { margin: 0; color: var(--muted); font-size: 14px; }
+  .modal-body { padding: 0 22px; overflow-y: auto; flex: 1; }
+  .rcpt-line { display: flex; justify-content: space-between; padding: 9px 0; border-bottom: 1px dashed var(--border); font-size: 15px; }
+  .rcpt-line .q { color: var(--muted); margin-right: 6px; }
+  .rcpt-sub { display: flex; justify-content: space-between; padding: 12px 0 4px; color: var(--muted); font-size: 15px; }
+  .final-box { background: var(--blue-soft); border-radius: 14px; padding: 14px 16px; margin: 12px 0 6px; }
+  .final-box label { display: block; font-size: 13px; font-weight: 700; color: var(--blue); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px; }
+  .final-input { display: flex; align-items: center; background: #fff; border-radius: 10px; border: 2px solid var(--blue); padding: 0 12px; }
+  .final-input span { font-size: 28px; font-weight: 800; color: var(--blue); }
+  .final-input input { border: 0; outline: none; width: 100%; font-size: 30px; font-weight: 800; color: var(--blue); padding: 8px 6px; background: transparent; font-family: inherit; }
+  .adj-note { font-size: 13px; color: var(--muted); margin-top: 8px; min-height: 18px; }
+  .adj-note.diff { color: #b26a00; font-weight: 600; }
+  .reset-price { background: none; border: 0; color: var(--blue); font-weight: 600; font-size: 13px; padding: 0; margin-left: 6px; text-decoration: underline; }
+  .modal-foot { padding: 16px 22px 22px; display: flex; flex-direction: column; gap: 10px; }
+  .submit-error { color: var(--red); font-size: 14px; text-align: center; }
+  .success-icon {
+    width: 72px; height: 72px; border-radius: 50%; background: #e6f6ed; color: var(--green);
+    display: flex; align-items: center; justify-content: center; margin: 26px auto 10px; font-size: 38px; font-weight: 800;
+  }
+  .center { text-align: center; }
+  .spinner { display: inline-block; width: 18px; height: 18px; border: 3px solid rgba(255,255,255,.4); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; vertical-align: -3px; margin-right: 8px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<!-- ================= LOCK SCREEN ================= -->
+<section id="lock">
+  <div class="lock-card" id="lockCard">
+    <div class="logo">DECA<span>.</span></div>
+    <p>Store Register &mdash; enter passcode</p>
+    <div class="dots" id="dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+    <div class="lock-error" id="lockError"></div>
+    <div class="keypad" id="keypad"></div>
+  </div>
+</section>
+
+<!-- ================= REGISTER ================= -->
+<section id="app" class="hidden">
+  <header>
+    <div><span class="logo">DECA<span style="color:var(--gold)">.</span></span><span class="sub">Store Register</span></div>
+    <button class="hdr-btn" id="lockBtn">Lock</button>
+  </header>
+
+  <div class="layout">
+    <main class="products">
+      <input class="search" id="search" type="search" placeholder="Search products..." autocomplete="off">
+      <div class="tabs" id="tabs"></div>
+      <div id="productList"></div>
+    </main>
+
+    <aside class="cart" id="cart">
+      <div class="cart-head">
+        <h2>Current Order</h2>
+        <button class="link-btn" id="clearBtn">Clear</button>
+      </div>
+      <div class="cart-items" id="cartItems"></div>
+
+      <div class="calc">
+        <div class="calc-row"><span>Items</span><span id="itemCount">0</span></div>
+        <div class="calc-total"><span class="lbl">Total</span><span class="amt" id="total">$0.00</span></div>
+        <div class="cash">
+          <label for="cashIn">Cash received</label>
+          <div class="money-input"><span>$</span><input id="cashIn" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.00"></div>
+        </div>
+        <div class="quick-cash" id="quickCash"></div>
+        <div class="change" id="changeRow"><span>Change due</span><b id="change">$0.00</b></div>
+        <button class="btn-primary" id="reviewBtn" disabled>Review &amp; Submit</button>
+      </div>
+    </aside>
+  </div>
+
+  <div class="scrim hidden" id="scrim"></div>
+  <button class="cart-bar" id="cartBar"><span id="cartBarCount">View order (0)</span><span id="cartBarTotal">$0.00</span></button>
+</section>
+
+<!-- ================= CONFIRM MODAL ================= -->
+<div class="modal-wrap hidden" id="confirmModal">
+  <div class="modal">
+    <div class="modal-head">
+      <h2>Confirm Order</h2>
+      <p>Check the items and the final price before submitting.</p>
+    </div>
+    <div class="modal-body">
+      <div id="rcptLines"></div>
+      <div class="rcpt-sub"><span>Calculated total</span><span id="rcptSubtotal">$0.00</span></div>
+      <div class="final-box">
+        <label for="finalPrice">Final price charged</label>
+        <div class="final-input"><span>$</span><input id="finalPrice" type="number" inputmode="decimal" min="0" step="0.01"></div>
+        <div class="adj-note" id="adjNote"></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <div class="submit-error hidden" id="submitError"></div>
+      <button class="btn-primary" id="submitBtn">Submit Order</button>
+      <button class="btn-secondary" id="backBtn">Back to Order</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= SUCCESS MODAL ================= -->
+<div class="modal-wrap hidden" id="successModal">
+  <div class="modal center">
+    <div class="success-icon">&#10003;</div>
+    <div class="modal-head">
+      <h2>Order Recorded</h2>
+      <p id="successText"></p>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-primary" id="newOrderBtn">Start New Order</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =====================================================================
+   CONFIG
+   ---------------------------------------------------------------------
+   SCRIPT_URL: only needed if you host this page OUTSIDE Google Apps
+   Script (e.g. GitHub Pages). Paste your Apps Script Web App URL here
+   (ends in /exec). If this page is served by Apps Script itself, leave
+   it blank -- it will talk to the sheet automatically.
+   ===================================================================== */
+const SCRIPT_URL = "";
+const PASSCODE = "3322";
+
+/* =====================================================================
+   PRODUCTS  -- edit names / prices / categories here
+   ===================================================================== */
+const PRODUCTS = [
+  // Drinks
+  { cat: "Drinks", name: "Dr. Pepper Zero", price: 2.50 },
+  { cat: "Drinks", name: "Deja Blue Water", price: 2.00 },
+  { cat: "Drinks", name: "Core Water", price: 2.00 },
+  { cat: "Drinks", name: "Ghost - Blue Raspberry (Sour Patch)", price: 3.50 },
+  { cat: "Drinks", name: "Ghost - Cherry Limeade", price: 2.00 },
+  { cat: "Drinks", name: "Ghost - Red Berry (Sour Patch)", price: 3.50 },
+  { cat: "Drinks", name: "Ghost - Sour Pink Lemonade", price: 3.50 },
+  { cat: "Drinks", name: "Ghost - Strawbango", price: 3.50 },
+  { cat: "Drinks", name: "Ghost - Sour Watermelon", price: 3.50 },
+  { cat: "Drinks", name: "Ghost - 'Merica Pop", price: 3.50 },
+
+  // Pop Tarts
+  { cat: "Pop Tarts", name: "Pop Tarts - Frosted Blueberry", price: 2.50 },
+  { cat: "Pop Tarts", name: "Pop Tarts - Frosted Cherry", price: 2.50 },
+  { cat: "Pop Tarts", name: "Pop Tarts - Frosted Strawberry", price: 2.50 },
+  { cat: "Pop Tarts", name: "Pop Tarts - Frosted Chocolate Fudge", price: 2.50 },
+  { cat: "Pop Tarts", name: "Pop Tarts - Frosted Cookies & Creme", price: 2.50 },
+  { cat: "Pop Tarts", name: "Pop Tarts - Frosted S'Mores", price: 2.50 },
+
+  // Chips
+  { cat: "Chips", name: "Flamin Hot Cheetos", price: 1.50 },
+  { cat: "Chips", name: "Flamin Hot Fritos", price: 1.50 },
+  { cat: "Chips", name: "Flamin Hot Doritos", price: 1.50 },
+  { cat: "Chips", name: "Flamin Hot Funyuns", price: 1.50 },
+  { cat: "Chips", name: "Chester's Hot Fries", price: 1.50 },
+  { cat: "Chips", name: "Taki's Fuego", price: 1.50 },
+  { cat: "Chips", name: "Taki's Blue Heat", price: 1.50 },
+  { cat: "Chips", name: "Taki's Nitro", price: 1.50 },
+  { cat: "Chips", name: "Taki's Chile Limon", price: 1.50 },
+  { cat: "Chips", name: "Diamante Doritos", price: 1.50 },
+  { cat: "Chips", name: "Funyun's", price: 1.50 },
+  { cat: "Chips", name: "Sun Chips - Garden Salsa", price: 1.50 },
+  { cat: "Chips", name: "Miss Vickie's - Jalapeno Chips", price: 1.50 },
+  { cat: "Chips", name: "Skinny Pop - Original", price: 2.50 },
+  { cat: "Chips", name: "Dot's Pretzels - Original", price: 2.50 },
+
+  // Pringles
+  { cat: "Pringles", name: "Pringles - Cheddar Cheese", price: 1.50 },
+  { cat: "Pringles", name: "Pringles - Original", price: 1.50 },
+  { cat: "Pringles", name: "Pringles - Sour Cream", price: 1.50 },
+  { cat: "Pringles", name: "Pringles - Pizza", price: 1.50 },
+  { cat: "Pringles", name: "Pringles - BBQ", price: 1.50 },
+  { cat: "Pringles", name: "Pringles - Cheddar & Sour Cream", price: 1.50 },
+  { cat: "Pringles", name: "Pringles (lg can) - Honey Mustard", price: 3.50 },
+  { cat: "Pringles", name: "Pringles (lg can) - Pizza", price: 3.50 },
+  { cat: "Pringles", name: "Pringles (lg can) - Smoked Cheddar", price: 3.50 },
+
+  // Sweets & Snacks
+  { cat: "Sweets & Snacks", name: "Cosmic Brownies", price: 1.50 },
+  { cat: "Sweets & Snacks", name: "Dark Chocolate Milanos", price: 1.25 },
+  { cat: "Sweets & Snacks", name: "Oreo 2 Pack", price: 1.25 },
+  { cat: "Sweets & Snacks", name: "Oreo 4 Pack", price: 3.00 },
+  { cat: "Sweets & Snacks", name: "Chips Ahoy 4 Pack", price: 3.00 },
+  { cat: "Sweets & Snacks", name: "Nutter Butter 4 Pack", price: 3.00 },
+  { cat: "Sweets & Snacks", name: "Rice Krispie Treat", price: 1.00 },
+  { cat: "Sweets & Snacks", name: "Welch's Fruit Snacks - Berries & Cherries", price: 0.50 },
+  { cat: "Sweets & Snacks", name: "Welch's Fruit Snacks - Original", price: 0.50 },
+  { cat: "Sweets & Snacks", name: "Jack Links Beef Jerky - Jalapeno", price: 2.50 },
+  { cat: "Sweets & Snacks", name: "Jack Links Beef Jerky - Pepper", price: 2.50 },
+  { cat: "Sweets & Snacks", name: "Jack Links Beef Jerky - Sweet & Hot", price: 2.50 },
+
+  // Gum
+  { cat: "Gum", name: "Extra Gum - Classic Bubble", price: 3.00 },
+  { cat: "Gum", name: "Extra Gum - Peppermint", price: 3.00 },
+  { cat: "Gum", name: "Extra Gum - Pink Lemonade", price: 3.00 },
+  { cat: "Gum", name: "Extra Gum - Polar Ice", price: 3.00 },
+  { cat: "Gum", name: "Extra Gum - Spearmint", price: 3.00 },
+  { cat: "Gum", name: "Extra Gum - Watermelon", price: 3.00 },
+  { cat: "Gum", name: "Extra Gum - Winterfresh", price: 3.00 },
+
+  // Merch
+  { cat: "Merch", name: "Indy Drawstring Backpacks", price: 5.00 },
+  { cat: "Merch", name: "Indy Luggage Tags", price: 5.00 },
+  { cat: "Merch", name: "Vintage DECA T-Shirts", price: 10.00 },
+  { cat: "Merch", name: "Vintage Indy Spirit T-Shirts", price: 20.00 },
+
+  // Tech & Supplies
+  { cat: "Tech & Supplies", name: "Chromebook Charger", price: 20.00 },
+  { cat: "Tech & Supplies", name: "Earpods (Wired - USB C)", price: 5.00 },
+  { cat: "Tech & Supplies", name: "Phone Charger (Cable)", price: 8.00 },
+  { cat: "Tech & Supplies", name: "Phone Charger (Plug)", price: 6.00 },
+  { cat: "Tech & Supplies", name: "Poster Board (Single Sheet)", price: 2.00 },
+  { cat: "Tech & Supplies", name: "Tri-Fold Poster", price: 7.75 },
+  { cat: "Tech & Supplies", name: "Glue Stick", price: 1.00 },
+  { cat: "Tech & Supplies", name: "Marker Set (24)", price: 15.00 },
+];
+PRODUCTS.forEach((p, i) => p.id = i);
+
+/* =====================================================================
+   STATE / HELPERS
+   ===================================================================== */
+const $ = (id) => document.getElementById(id);
+const money = (n) => "$" + (Math.round(n * 100) / 100).toFixed(2);
+const round2 = (n) => Math.round(n * 100) / 100;
+const esc = (s) => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const CATEGORIES = ["All", ...new Set(PRODUCTS.map(p => p.cat))];
+
+let cart = [];          // [{ id, qty }] in the order items were added
+let activeCat = "All";
+let pin = "";
+
+function cartTotal() { return round2(cart.reduce((s, l) => s + PRODUCTS[l.id].price * l.qty, 0)); }
+function cartCount() { return cart.reduce((s, l) => s + l.qty, 0); }
+
+/* =====================================================================
+   LOCK SCREEN
+   ===================================================================== */
+function buildKeypad() {
+  const keys = ["1","2","3","4","5","6","7","8","9","clear","0","del"];
+  $("keypad").innerHTML = keys.map(k => {
+    if (k === "clear") return `<button class="key ghost" data-k="clear">Clear</button>`;
+    if (k === "del") return `<button class="key ghost" data-k="del">&#9003;</button>`;
+    return `<button class="key" data-k="${k}">${k}</button>`;
+  }).join("");
+  $("keypad").addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b) return;
+    pressKey(b.dataset.k);
+  });
+  document.addEventListener("keydown", e => {
+    if ($("lock").classList.contains("hidden")) return;
+    if (/^[0-9]$/.test(e.key)) pressKey(e.key);
+    else if (e.key === "Backspace") pressKey("del");
+  });
+}
+function pressKey(k) {
+  $("lockError").textContent = "";
+  if (k === "clear") pin = "";
+  else if (k === "del") pin = pin.slice(0, -1);
+  else if (pin.length < 4) pin += k;
+  renderDots();
+  if (pin.length === 4) setTimeout(checkPin, 120);
+}
+function renderDots() {
+  [...$("dots").children].forEach((d, i) => d.classList.toggle("filled", i < pin.length));
+}
+function checkPin() {
+  if (pin === PASSCODE) {
+    try { sessionStorage.setItem("deca_unlocked", "1"); } catch (e) {}
+    unlock();
+  } else {
+    $("lockError").textContent = "Incorrect passcode";
+    $("lockCard").classList.remove("shake"); void $("lockCard").offsetWidth; $("lockCard").classList.add("shake");
+    pin = ""; renderDots();
+  }
+}
+function unlock() { $("lock").classList.add("hidden"); $("app").classList.remove("hidden"); }
+function lock() {
+  try { sessionStorage.removeItem("deca_unlocked"); } catch (e) {}
+  pin = ""; renderDots();
+  $("app").classList.add("hidden"); $("lock").classList.remove("hidden");
+}
+
+/* =====================================================================
+   PRODUCTS
+   ===================================================================== */
+function renderTabs() {
+  $("tabs").innerHTML = CATEGORIES.map(c =>
+    `<button class="tab ${c === activeCat ? "active" : ""}" data-cat="${esc(c)}">${esc(c)}</button>`).join("");
+}
+function renderProducts() {
+  const q = $("search").value.trim().toLowerCase();
+  const qtyById = Object.fromEntries(cart.map(l => [l.id, l.qty]));
+  let list = PRODUCTS.filter(p => (activeCat === "All" || p.cat === activeCat) && (!q || p.name.toLowerCase().includes(q)));
+  if (!list.length) { $("productList").innerHTML = `<div class="empty-search">No products match "${esc(q)}"</div>`; return; }
+
+  const cats = [...new Set(list.map(p => p.cat))];
+  $("productList").innerHTML = cats.map(c => `
+    <div class="cat-title">${esc(c)}</div>
+    <div class="grid">
+      ${list.filter(p => p.cat === c).map(p => `
+        <button class="prod ${qtyById[p.id] ? "in-cart" : ""}" data-id="${p.id}">
+          ${qtyById[p.id] ? `<span class="badge">${qtyById[p.id]}</span>` : ""}
+          <span class="name">${esc(p.name)}</span>
+          <span class="price">${money(p.price)}</span>
+        </button>`).join("")}
+    </div>`).join("");
+}
+
+/* =====================================================================
+   CART + CALCULATOR
+   ===================================================================== */
+function addItem(id) {
+  const line = cart.find(l => l.id === id);
+  if (line) line.qty++; else cart.push({ id, qty: 1 });
+  render();
+}
+function changeQty(id, delta) {
+  const line = cart.find(l => l.id === id); if (!line) return;
+  line.qty += delta;
+  if (line.qty <= 0) cart = cart.filter(l => l.id !== id);
+  render();
+}
+function renderCart() {
+  if (!cart.length) {
+    $("cartItems").innerHTML = `<div class="cart-empty">Tap a product to add it to the order.</div>`;
+  } else {
+    $("cartItems").innerHTML = cart.map(l => {
+      const p = PRODUCTS[l.id];
+      return `<div class="line">
+        <div class="line-info"><div class="line-name">${esc(p.name)}</div><div class="line-unit">${money(p.price)} each</div></div>
+        <div class="qty"><button data-dec="${p.id}" aria-label="Remove one">&minus;</button><span>${l.qty}</span><button data-inc="${p.id}" aria-label="Add one">+</button></div>
+        <div class="line-total">${money(p.price * l.qty)}</div>
+      </div>`;
+    }).join("");
+  }
+  const total = cartTotal(), count = cartCount();
+  $("itemCount").textContent = count;
+  $("total").textContent = money(total);
+  $("cartBarCount").textContent = `View order (${count})`;
+  $("cartBarTotal").textContent = money(total);
+  $("reviewBtn").disabled = !cart.length;
+  renderQuickCash(total);
+  renderChange();
+}
+function renderQuickCash(total) {
+  const opts = [...new Set([Math.ceil(total), 5, 10, 20].filter(v => v >= total && v > 0))].sort((a, b) => a - b).slice(0, 4);
+  $("quickCash").innerHTML = total > 0 ? opts.map(v => `<button data-cash="${v}">${money(v)}</button>`).join("") : "";
+}
+function renderChange() {
+  const cash = parseFloat($("cashIn").value);
+  const total = cartTotal();
+  const row = $("changeRow");
+  if (isNaN(cash) || cash <= 0) { $("change").textContent = money(0); row.classList.remove("short"); row.firstElementChild.textContent = "Change due"; return; }
+  const diff = round2(cash - total);
+  if (diff >= 0) { row.classList.remove("short"); row.firstElementChild.textContent = "Change due"; $("change").textContent = money(diff); }
+  else { row.classList.add("short"); row.firstElementChild.textContent = "Still owed"; $("change").textContent = money(-diff); }
+}
+function render() { renderProducts(); renderCart(); }
+
+function openCart() { $("cart").classList.add("open"); $("scrim").classList.remove("hidden"); }
+function closeCart() { $("cart").classList.remove("open"); $("scrim").classList.add("hidden"); }
+
+/* =====================================================================
+   CONFIRM + SUBMIT
+   ===================================================================== */
+function openConfirm() {
+  if (!cart.length) return;
+  closeCart();
+  const total = cartTotal();
+  $("rcptLines").innerHTML = cart.map(l => {
+    const p = PRODUCTS[l.id];
+    return `<div class="rcpt-line"><span><span class="q">${l.qty}&times;</span>${esc(p.name)}</span><span>${money(p.price * l.qty)}</span></div>`;
+  }).join("");
+  $("rcptSubtotal").textContent = money(total);
+  $("finalPrice").value = total.toFixed(2);
+  $("submitError").classList.add("hidden");
+  updateAdjNote();
+  $("confirmModal").classList.remove("hidden");
+}
+function updateAdjNote() {
+  const total = cartTotal();
+  const v = parseFloat($("finalPrice").value);
+  const note = $("adjNote");
+  if (isNaN(v)) { note.className = "adj-note diff"; note.textContent = "Enter a price."; return; }
+  const diff = round2(v - total);
+  if (diff === 0) { note.className = "adj-note"; note.textContent = "Matches calculated total. Tap the price to edit it."; }
+  else {
+    note.className = "adj-note diff";
+    note.innerHTML = `${diff < 0 ? "Discount of " + money(-diff) : "Added " + money(diff)} from calculated total.<button class="reset-price" id="resetPrice">Reset</button>`;
+  }
+}
+
+function submitOrder() {
+  const final = parseFloat($("finalPrice").value);
+  if (isNaN(final) || final < 0) { showSubmitError("Please enter a valid final price."); return; }
+
+  const subtotal = cartTotal();
+  const payload = {
+    password: PASSCODE,
+    orderId: makeOrderId(),
+    clientTime: new Date().toISOString(),
+    subtotal: subtotal,
+    finalPrice: round2(final),
+    items: cart.map(l => {
+      const p = PRODUCTS[l.id];
+      return { name: p.name, category: p.cat, price: p.price, qty: l.qty, lineTotal: round2(p.price * l.qty) };
+    })
+  };
+
+  const btn = $("submitBtn");
+  btn.disabled = true; btn.innerHTML = `<span class="spinner"></span>Submitting...`;
+  $("submitError").classList.add("hidden");
+
+  sendToSheet(payload)
+    .then(res => {
+      if (res && res.ok === false) throw new Error(res.error || "The sheet rejected the order.");
+      $("confirmModal").classList.add("hidden");
+      $("successText").innerHTML = `Order <b>${esc(payload.orderId)}</b> &middot; ${cartCount()} item${cartCount() === 1 ? "" : "s"} &middot; <b>${money(payload.finalPrice)}</b>`;
+      $("successModal").classList.remove("hidden");
+    })
+    .catch(err => showSubmitError("Could not save order: " + (err && err.message ? err.message : err) + ". Check your connection and try again."))
+    .finally(() => { btn.disabled = false; btn.textContent = "Submit Order"; });
+}
+function showSubmitError(msg) { const e = $("submitError"); e.textContent = msg; e.classList.remove("hidden"); }
+function makeOrderId() {
+  const d = new Date(), pad = n => String(n).padStart(2, "0");
+  return `${pad(d.getMonth() + 1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}-${Math.random().toString(36).slice(2, 5).toUpperCase()}`;
+}
+
+/* Sends the order to Google Sheets.
+   - Inside Apps Script (HtmlService): uses google.script.run
+   - Anywhere else: POSTs to SCRIPT_URL */
+function sendToSheet(payload) {
+  if (typeof google !== "undefined" && google.script && google.script.run) {
+    return new Promise((resolve, reject) => {
+      google.script.run.withSuccessHandler(resolve).withFailureHandler(reject).recordOrder(payload);
+    });
+  }
+  if (!SCRIPT_URL) return Promise.reject(new Error("Google Sheet not connected yet (SCRIPT_URL is empty)"));
+  return fetch(SCRIPT_URL, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" }, // avoids CORS preflight
+    body: JSON.stringify(payload)
+  }).then(r => r.json());
+}
+
+function newOrder() {
+  cart = []; $("cashIn").value = ""; $("search").value = "";
+  $("successModal").classList.add("hidden");
+  render();
+  window.scrollTo({ top: 0 });
+}
+
+/* =====================================================================
+   EVENTS
+   ===================================================================== */
+$("tabs").addEventListener("click", e => {
+  const b = e.target.closest(".tab"); if (!b) return;
+  activeCat = b.dataset.cat; renderTabs(); renderProducts();
+});
+$("search").addEventListener("input", renderProducts);
+$("productList").addEventListener("click", e => {
+  const b = e.target.closest(".prod"); if (b) addItem(+b.dataset.id);
+});
+$("cartItems").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  if (b.dataset.inc) changeQty(+b.dataset.inc, 1);
+  if (b.dataset.dec) changeQty(+b.dataset.dec, -1);
+});
+$("clearBtn").addEventListener("click", () => { if (cart.length && confirm("Clear the current order?")) { cart = []; $("cashIn").value = ""; render(); } });
+$("cashIn").addEventListener("input", renderChange);
+$("quickCash").addEventListener("click", e => { const b = e.target.closest("button"); if (b) { $("cashIn").value = (+b.dataset.cash).toFixed(2); renderChange(); } });
+$("reviewBtn").addEventListener("click", openConfirm);
+$("cartBar").addEventListener("click", openCart);
+$("scrim").addEventListener("click", closeCart);
+$("finalPrice").addEventListener("input", updateAdjNote);
+$("finalPrice").addEventListener("focus", e => e.target.select());
+$("adjNote").addEventListener("click", e => { if (e.target.id === "resetPrice") { $("finalPrice").value = cartTotal().toFixed(2); updateAdjNote(); } });
+$("backBtn").addEventListener("click", () => $("confirmModal").classList.add("hidden"));
+$("submitBtn").addEventListener("click", submitOrder);
+$("newOrderBtn").addEventListener("click", newOrder);
+$("lockBtn").addEventListener("click", lock);
+
+/* =====================================================================
+   INIT
+   ===================================================================== */
+buildKeypad();
+renderTabs();
+render();
+try { if (sessionStorage.getItem("deca_unlocked") === "1") unlock(); } catch (e) {}
+</script>
+</body>
+</html>
